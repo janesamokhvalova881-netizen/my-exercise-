@@ -1,0 +1,933 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Галерея шедевров</title>
+<style>
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+
+  body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: linear-gradient(135deg, #0a0a1a 0%, #1a1035 30%, #151530 60%, #0d0d25 100%);
+    color: #e0d8f0;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  h1.page-title {
+    text-align: center;
+    padding: 40px 20px 10px;
+    font-size: clamp(1.6rem, 4vw, 2.8rem);
+    font-weight: 300;
+    letter-spacing: 3px;
+    background: linear-gradient(90deg, #a78bfa, #60a5fa, #a78bfa);
+    background-size: 200% auto;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: shimmer 4s linear infinite;
+  }
+
+  @keyframes shimmer {
+    0% { background-position: 0% center; }
+    100% { background-position: 200% center; }
+  }
+
+  .page-subtitle {
+    text-align: center;
+    color: #8b80a8;
+    font-size: 0.95rem;
+    margin-bottom: 35px;
+    letter-spacing: 1px;
+  }
+
+  /* ===== GALLERY GRID ===== */
+  .gallery {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 28px;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 30px 60px;
+  }
+
+  @media (max-width: 900px) {
+    .gallery { grid-template-columns: repeat(2, 1fr); gap: 18px; padding: 0 15px 40px; }
+  }
+  @media (max-width: 540px) {
+    .gallery { grid-template-columns: 1fr; gap: 16px; padding: 0 12px 30px; }
+  }
+
+  /* ===== CARD ===== */
+  .card {
+    position: relative;
+    border-radius: 16px;
+    overflow: hidden;
+    background: linear-gradient(145deg, #1e1640, #15102a);
+    box-shadow: 0 8px 30px rgba(0,0,0,0.4), 0 0 60px rgba(100,80,180,0.08);
+    cursor: pointer;
+    transition: transform 0.4s cubic-bezier(.22,.61,.36,1), box-shadow 0.4s ease;
+  }
+
+  .card:hover {
+    transform: translateY(-10px);
+    box-shadow: 0 16px 50px rgba(0,0,0,0.5), 0 0 80px rgba(120,100,220,0.15);
+  }
+
+  .card-img-wrap {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 4/3;
+    overflow: hidden;
+    background: #0d0b1a;
+  }
+
+  .card-img-wrap img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    transition: transform 0.5s ease;
+  }
+
+  .card:hover .card-img-wrap img {
+    transform: scale(1.04);
+  }
+
+  .card-info {
+    padding: 14px 16px 16px;
+  }
+
+  .card-info .title {
+    font-size: 1.05rem;
+    font-weight: 600;
+    color: #e8e0f8;
+    margin-bottom: 4px;
+  }
+
+  .card-info .author {
+    font-size: 0.85rem;
+    color: #9a8cc0;
+  }
+
+  .card-info .year {
+    font-size: 0.8rem;
+    color: #6b5fa0;
+    margin-top: 2px;
+  }
+
+  /* Play button on card */
+  .card-play-btn {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    background: rgba(120, 90, 200, 0.75);
+    backdrop-filter: blur(6px);
+    border: 2px solid rgba(200,180,255,0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 5;
+    transition: background 0.3s, transform 0.3s;
+  }
+
+  .card-play-btn:hover {
+    background: rgba(140, 110, 230, 0.9);
+    transform: scale(1.1);
+  }
+
+  .card-play-btn svg {
+    width: 18px;
+    height: 18px;
+    fill: #fff;
+    margin-left: 2px;
+  }
+
+  /* ===== MODAL ===== */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    background: rgba(5,5,15,0.92);
+    backdrop-filter: blur(12px);
+    animation: fadeIn 0.35s ease;
+  }
+
+  .modal-overlay.active {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  @keyframes slideUp {
+    from { opacity: 0; transform: translateY(40px) scale(0.97); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+  }
+
+  .modal-content {
+    display: flex;
+    width: 92%;
+    max-width: 1100px;
+    max-height: 90vh;
+    background: linear-gradient(160deg, #1a1240, #120e2a);
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: 0 20px 80px rgba(0,0,0,0.6), 0 0 100px rgba(100,70,200,0.1);
+    animation: slideUp 0.4s cubic-bezier(.22,.61,.36,1);
+    position: relative;
+  }
+
+  @media (max-width: 750px) {
+    .modal-content {
+      flex-direction: column;
+      max-height: 95vh;
+      overflow-y: auto;
+    }
+  }
+
+  .modal-image-section {
+    flex: 1 1 55%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #0a0818;
+    min-height: 300px;
+    padding: 20px;
+  }
+
+  .modal-image-section img {
+    max-width: 100%;
+    max-height: 75vh;
+    object-fit: contain;
+    border-radius: 8px;
+  }
+
+  .modal-text-section {
+    flex: 1 1 45%;
+    padding: 30px 28px 20px;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+  }
+
+  .modal-title {
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: #ede6ff;
+    margin-bottom: 6px;
+    line-height: 1.3;
+  }
+
+  .modal-author {
+    font-size: 1rem;
+    color: #a89cd0;
+    margin-bottom: 4px;
+  }
+
+  .modal-year {
+    font-size: 0.9rem;
+    color: #7062a0;
+    margin-bottom: 18px;
+  }
+
+  .modal-description {
+    font-size: 0.92rem;
+    line-height: 1.7;
+    color: #c0b6d8;
+    margin-bottom: 24px;
+    flex-grow: 1;
+  }
+
+  /* Close button */
+  .modal-close-btn {
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: rgba(100, 70, 180, 0.5);
+    backdrop-filter: blur(6px);
+    border: 1px solid rgba(200,180,255,0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 10;
+    transition: background 0.3s, transform 0.3s;
+  }
+
+  .modal-close-btn:hover {
+    background: rgba(160, 100, 230, 0.7);
+    transform: scale(1.1) rotate(90deg);
+  }
+
+  .modal-close-btn svg {
+    width: 18px;
+    height: 18px;
+    fill: #fff;
+  }
+
+  /* ===== AUDIO CONTROLS ===== */
+  .audio-controls {
+    background: rgba(30, 22, 60, 0.6);
+    border-radius: 14px;
+    padding: 16px;
+    margin-bottom: 18px;
+    border: 1px solid rgba(120,90,200,0.15);
+  }
+
+  .audio-controls-title {
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: #7b6ea8;
+    margin-bottom: 12px;
+  }
+
+  .audio-buttons {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+  }
+
+  .audio-btn {
+    padding: 8px 16px;
+    border-radius: 8px;
+    border: 1px solid rgba(120,90,200,0.3);
+    background: rgba(60,40,120,0.3);
+    color: #d0c4f0;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all 0.3s;
+    font-family: inherit;
+  }
+
+  .audio-btn:hover {
+    background: rgba(80,55,160,0.5);
+    border-color: rgba(150,120,240,0.5);
+  }
+
+  .audio-btn.active {
+    background: rgba(120,90,220,0.5);
+    border-color: rgba(160,130,255,0.6);
+    color: #fff;
+  }
+
+  .speed-control {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+
+  .speed-control label {
+    font-size: 0.8rem;
+    color: #8b7fb8;
+    white-space: nowrap;
+  }
+
+  .speed-slider {
+    flex: 1;
+    -webkit-appearance: none;
+    appearance: none;
+    height: 6px;
+    border-radius: 3px;
+    background: linear-gradient(90deg, #3a2870, #6b4fc0);
+    outline: none;
+  }
+
+  .speed-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: #a78bfa;
+    cursor: pointer;
+    box-shadow: 0 0 8px rgba(167,139,250,0.5);
+  }
+
+  .speed-slider::-moz-range-thumb {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: #a78bfa;
+    cursor: pointer;
+    border: none;
+    box-shadow: 0 0 8px rgba(167,139,250,0.5);
+  }
+
+  .speed-value {
+    font-size: 0.8rem;
+    color: #a78bfa;
+    min-width: 35px;
+    text-align: right;
+  }
+
+  .status-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 0;
+  }
+
+  .status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #4a3d6a;
+    transition: background 0.3s;
+  }
+
+  .status-dot.playing {
+    background: #4ade80;
+    box-shadow: 0 0 8px rgba(74,222,128,0.5);
+    animation: pulse 1.2s infinite;
+  }
+
+  .status-dot.paused {
+    background: #facc15;
+    box-shadow: 0 0 8px rgba(250,204,21,0.4);
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+
+  .status-text {
+    font-size: 0.8rem;
+    color: #7b6ea8;
+  }
+
+  .progress-bar-wrap {
+    width: 100%;
+    height: 4px;
+    background: rgba(60,40,120,0.4);
+    border-radius: 2px;
+    margin-top: 8px;
+    overflow: hidden;
+  }
+
+  .progress-bar-fill {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, #7c3aed, #a78bfa);
+    border-radius: 2px;
+    transition: width 0.3s linear;
+  }
+
+  /* ===== REVIEW BUTTON & SECTION ===== */
+  .review-section {
+    margin-top: auto;
+  }
+
+  .review-btn {
+    width: 100%;
+    padding: 12px;
+    border-radius: 10px;
+    border: 1px solid rgba(120,90,200,0.3);
+    background: linear-gradient(135deg, rgba(60,40,120,0.3), rgba(40,25,90,0.4));
+    color: #d0c4f0;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.3s;
+    font-family: inherit;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+
+  .review-btn:hover {
+    background: linear-gradient(135deg, rgba(80,55,160,0.5), rgba(60,40,120,0.6));
+    border-color: rgba(150,120,240,0.5);
+  }
+
+  .review-btn svg {
+    width: 18px;
+    height: 18px;
+    fill: #a78bfa;
+  }
+
+  /* Review panel */
+  .review-panel {
+    display: none;
+    margin-top: 14px;
+    background: rgba(20,15,45,0.6);
+    border-radius: 12px;
+    padding: 14px;
+    border: 1px solid rgba(120,90,200,0.15);
+  }
+
+  .review-panel.active {
+    display: block;
+    animation: fadeIn 0.3s ease;
+  }
+
+  .review-preview {
+    width: 100%;
+    max-height: 180px;
+    background: #0a0818;
+    border-radius: 8px;
+    margin-bottom: 10px;
+    display: block;
+  }
+
+  .review-buttons {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .review-rec-btn {
+    flex: 1;
+    padding: 10px;
+    border-radius: 8px;
+    border: none;
+    font-size: 0.85rem;
+    cursor: pointer;
+    font-family: inherit;
+    transition: all 0.3s;
+  }
+
+  .review-rec-btn.start {
+    background: linear-gradient(135deg, #dc2626, #b91c1c);
+    color: #fff;
+  }
+
+  .review-rec-btn.start:hover {
+    background: linear-gradient(135deg, #ef4444, #dc2626);
+  }
+
+  .review-rec-btn.stop {
+    background: linear-gradient(135deg, #4a3d6a, #3a2d5a);
+    color: #d0c4f0;
+  }
+
+  .review-rec-btn.stop:hover {
+    background: linear-gradient(135deg, #5a4d7a, #4a3d6a);
+  }
+
+  .review-rec-btn.save {
+    background: linear-gradient(135deg, #059669, #047857);
+    color: #fff;
+  }
+
+  .review-rec-btn.save:hover {
+    background: linear-gradient(135deg, #10b981, #059669);
+  }
+
+  .review-rec-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+
+  .review-status {
+    font-size: 0.75rem;
+    color: #7b6ea8;
+    margin-top: 8px;
+    text-align: center;
+  }
+
+  /* ===== SCROLLBAR ===== */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: rgba(10,10,26,0.5); }
+  ::-webkit-scrollbar-thumb { background: rgba(100,70,180,0.3); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: rgba(100,70,180,0.5); }
+</style>
+</head>
+<body>
+
+<h1 class="page-title">Галерея шедевров</h1>
+<p class="page-subtitle">Шесть великих полотен — нажмите, чтобы узнать больше</p>
+
+<div class="gallery" id="gallery"></div>
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal-content">
+    <button class="modal-close-btn" id="modalCloseBtn" title="Закрыть">
+      <svg viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12" stroke="#fff" stroke-width="2.5" stroke-linecap="round" fill="none"/></svg>
+    </button>
+
+    <div class="modal-image-section">
+      <img id="modalImage" src="" alt="">
+    </div>
+
+    <div class="modal-text-section">
+      <div class="modal-title" id="modalTitle"></div>
+      <div class="modal-author" id="modalAuthor"></div>
+      <div class="modal-year" id="modalYear"></div>
+      <div class="modal-description" id="modalDescription"></div>
+
+      <!-- Audio Controls -->
+      <div class="audio-controls">
+        <div class="audio-controls-title">🎧 Озвучивание</div>
+        <div class="audio-buttons">
+          <button class="audio-btn" id="audioPlayBtn">▶ Воспроизвести</button>
+          <button class="audio-btn" id="audioPauseBtn">⏸ Пауза</button>
+          <button class="audio-btn" id="audioStopBtn">⏹ Остановить</button>
+        </div>
+        <div class="speed-control">
+          <label>Скорость:</label>
+          <input type="range" class="speed-slider" id="speedSlider" min="0.5" max="2" step="0.1" value="1">
+          <span class="speed-value" id="speedValue">1.0×</span>
+        </div>
+        <div class="status-bar">
+          <div class="status-dot" id="statusDot"></div>
+          <span class="status-text" id="statusText">Ожидание</span>
+        </div>
+        <div class="progress-bar-wrap">
+          <div class="progress-bar-fill" id="progressBarFill"></div>
+        </div>
+      </div>
+
+      <!-- Review Section -->
+      <div class="review-section">
+        <button class="review-btn" id="reviewBtn">
+          <svg viewBox="0 0 24 24"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z" fill="none" stroke="#a78bfa" stroke-width="1.5"/><circle cx="12" cy="13" r="4" fill="none" stroke="#a78bfa" stroke-width="1.5"/></svg>
+          Мой отзыв
+        </button>
+        <div class="review-panel" id="reviewPanel">
+          <video class="review-preview" id="reviewPreview" autoplay muted playsinline></video>
+          <div class="review-buttons">
+            <button class="review-rec-btn start" id="recStartBtn">⏺ Начать запись</button>
+            <button class="review-rec-btn stop" id="recStopBtn" disabled>⏹ Остановить</button>
+            <button class="review-rec-btn save" id="recSaveBtn" disabled>💾 Сохранить</button>
+          </div>
+          <div class="review-status" id="reviewStatus">Нажмите «Начать запись» для записи отзыва</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const paintings = [
+  {
+    id: 1,
+    title: '«Богатыри»',
+    author: 'Виктор Васнецов',
+    year: 1898,
+    image: 'Богатыри.jpg',
+    audio: 'Богатыри.mp3',
+    description: 'Картина «Богатыри» — самое знаменитое произведение Виктора Михайловича Васнецова, ставшее символом русского эпического искусства. Художник работал над этим полотном почти тридцать лет, создавая образы трёх легендарных защитников земли Русской. В центре композиции изображён Илья Муромец — мудрый и спокойный старец, олицетворяющий духовную силу и народную справедливость. Слева от него находится Добрыня Никитич, воплощающий благородство и рыцарскую честь русского воина. Справа стоит Алёша Попович — юный, хитрый и смекалистый богатырь, символизирующий народную удачу и находчивость. За их спинами простираются бескрайние просторы родной земли, над которыми нависли тёмные тучи, предвещающие новые испытания. Эта картина стала настоящим гимном русской силы, мужества и непоколебимого духа народа.'
+  },
+  {
+    id: 2,
+    title: '«Утро в сосновом лесу»',
+    author: 'Иван Шишкин',
+    year: 1889,
+    image: 'Мишки.jpg',
+    audio: 'Мишки.mp3',
+    description: 'Картина «Утро в сосновом лесу» — одно из самых узнаваемых и любимых произведений в русской пейзажной живописи. Иван Иванович Шишкин мастерски изобразил густой сосновый бор, пронизанный мягкими лучами утреннего солнца, пробивающимися сквозь вековые кроны деревьев. Семья медведей — мать с тремя медвежатами — резвится на поваленном стволе, создавая тёплую и живую сцену дикой природы. Медведиц и медвежат на самом деле нарисовал художник Константин Савицкий, однако Шишкин был основным автором пейзажа. Картина поражает своей фотографической точностью и одновременно поэтической атмосферой русского леса. Каждое дерево, каждый луч света выписаны с невероятной тщательностью, что создаёт эффект присутствия. Это полотно стало настоящей иконой русской природы и вдохновляет зрителей уже более ста тридцати лет.'
+  },
+  {
+    id: 3,
+    title: '«Девушка с жемчужной серёжкой»',
+    author: 'Ян Вермеер',
+    year: 1665,
+    image: 'Девушка.jpg',
+    audio: 'Девушка.mp3',
+    description: 'Картина «Девушка с жемчужной серёжкой» Яна Вермеера по праву считается одним из величайших шедевров мировой живописи XVII века. На тёмном, почти бездонном фоне возникает лицо молодой девушки, повёрнутое к зрителю с загадочным и притягательным взглядом. Её влажные губы слегка приоткрыты, словно она собирается произнести какое-то важное слово. Крупная жемчужная серьга сверкает на её ухе, притягивая к себе свет и внимание зрителя. Жёлто-синий тюрбан, укутывающий голову девушки, придаёт образу восточную экзотичность и таинственность. Вермеер достиг невероятного мастерства в передаче света — мягкое свечение падает на лицо, создавая эффект живого дыхания. Эту картину часто называют «голландской Моной Лизой» за её неуловимую и вечную красоту.'
+  },
+  {
+    id: 4,
+    title: '«Золотая осень»',
+    author: 'Исаак Левитан',
+    year: 1895,
+    image: 'Осень.jpg',
+    audio: 'Осень.mp3',
+    description: 'Картина «Золотая осень» Исаака Ильича Левитана — это гимн русской осени, воплощённый в красках с невероятной поэтичностью и нежностью. Художник изобразил тихую речку, берега которой утопают в золотой листве берёз и осин, залитых тёплым солнечным светом. Небо, высокое и прозрачное, с лёгкими облаками, отражается в спокойной глади воды, создавая ощущение бесконечного простора. Левитан передал мимолётное, ускользающее состояние природы, когда земля ещё не готова расстаться с яркими красками уходящего лета. Каждый мазок наполнен любовью к родной земле и тонким лирическим чувством, характерным для всего творчества художника. Эта работа стала одним из символов русского импрессионизма и демонстрирует уникальную способность Левитана находить красоту в самом простом пейзаже. Картина вызывает чувство светлой грусти и тихого восхищения перед величием природы.'
+  },
+  {
+    id: 5,
+    title: '«Опять двойка»',
+    author: 'Фёдор Решетников',
+    year: 1952,
+    image: 'Двойка.jpg',
+    audio: 'Двойка.mp3',
+    description: 'Картина «Опять двойка» Фёдора Павловича Решетникова стала одним из самых известных произведений советской жанровой живописи. На полотне изображён мальчик-школьник, понуро вернувшийся домой с очередной двойкой, и его семья, реагирующая на эту новость каждый по-своему. Мать в отчаянии разводит руками, младшая сестрёнка с любопытством наблюдает за сценой, а верный дворняжка радостно встречает хозяина, ничего не понимая. Отец, видимо, только что узнал о проделке сына и выражает своё неодобрение суровым взглядом и жестикуляцией. Картина наполнена жизненной правдой, юмором и теплотой, делая её понятной и близкой каждому зрителю. Решетникову удалось создать универсальный образ школьных проблем, знакомый каждому из нас с детства. Несмотря на серьёзность сюжета, картина излучает оптимизм и веру в то, что всё обязательно наладится.'
+  },
+  {
+    id: 6,
+    title: '«Бурлаки на Волге»',
+    author: 'Илья Репин',
+    year: 1873,
+    image: 'Бурлаки.jpg',
+    audio: 'Бурлаки.mp3',
+    description: 'Картина «Бурлаки на Волге» Ильи Ефимовича Репина — одно из самых мощных и социально значимых произведений русской живописи XIX века. Молодой Репин, будучи на берегах Волги, был поражён тяжелейшим трудом бурлаков и решил запечатлеть эту сцену на холсте. На переднем плане изображена вереница измождённых людей, впряжённых в лямку и тянущих баржу против течения широкой реки. Каждый бурлак — это яркий индивидуальный характер: от мудрого старика Канина до бунтаря-юноши в центре, который пытается расправить лямку. Репин с беспощадной правдивостью показал не только физическое страдание, но и духовную силу этих людей, сломленных, но не покорённых судьбой. Картина вызвала огромный общественный резонанс и стала символом народного страдания и социальной несправедливости. Это полотно навсегда вошло в золотой фонд русского искусства и остаётся актуальным по сей день.'
+  }
+];
+
+// Build gallery
+const gallery = document.getElementById('gallery');
+
+paintings.forEach((p, idx) => {
+  const card = document.createElement('div');
+  card.className = 'card';
+  card.dataset.index = idx;
+  card.innerHTML = `
+    <div class="card-img-wrap">
+      <img src="${p.image}" alt="${p.title}" loading="lazy">
+      <button class="card-play-btn" title="Озвучить" data-index="${idx}">
+        <svg viewBox="0 0 24 24"><polygon points="5,3 19,12 5,21"/></svg>
+      </button>
+    </div>
+    <div class="card-info">
+      <div class="title">${p.title}</div>
+      <div class="author">${p.author}</div>
+      <div class="year">${p.year} г.</div>
+    </div>
+  `;
+  gallery.appendChild(card);
+});
+
+// Card click -> open modal
+gallery.querySelectorAll('.card').forEach(card => {
+  card.addEventListener('click', (e) => {
+    if (e.target.closest('.card-play-btn')) return;
+    openModal(parseInt(card.dataset.index));
+  });
+});
+
+// Play button on card -> open modal + start audio
+gallery.querySelectorAll('.card-play-btn').forEach(btn => {
+  btn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    openModal(parseInt(btn.dataset.index), true);
+  });
+});
+
+// Modal elements
+const modalOverlay = document.getElementById('modalOverlay');
+const modalImage = document.getElementById('modalImage');
+const modalTitle = document.getElementById('modalTitle');
+const modalAuthor = document.getElementById('modalAuthor');
+const modalYear = document.getElementById('modalYear');
+const modalDescription = document.getElementById('modalDescription');
+const modalCloseBtn = document.getElementById('modalCloseBtn');
+
+// Audio
+let audio = new Audio();
+audio.preload = 'auto';
+
+const audioPlayBtn = document.getElementById('audioPlayBtn');
+const audioPauseBtn = document.getElementById('audioPauseBtn');
+const audioStopBtn = document.getElementById('audioStopBtn');
+const speedSlider = document.getElementById('speedSlider');
+const speedValue = document.getElementById('speedValue');
+const statusDot = document.getElementById('statusDot');
+const statusText = document.getElementById('statusText');
+const progressBarFill = document.getElementById('progressBarFill');
+
+let currentIndex = -1;
+
+function openModal(idx, autoPlay = false) {
+  const p = paintings[idx];
+  currentIndex = idx;
+  modalImage.src = p.image;
+  modalImage.alt = p.title;
+  modalTitle.textContent = p.title;
+  modalAuthor.textContent = p.author;
+  modalYear.textContent = p.year + ' г.';
+  modalDescription.textContent = p.description;
+
+  // Reset audio
+  stopAudio();
+  audio.src = p.audio;
+  audio.playbackRate = parseFloat(speedSlider.value);
+
+  modalOverlay.classList.add('active');
+  document.body.style.overflow = 'hidden';
+
+  if (autoPlay) {
+    playAudio();
+  }
+}
+
+function closeModal() {
+  modalOverlay.classList.remove('active');
+  document.body.style.overflow = '';
+  stopAudio();
+  currentIndex = -1;
+}
+
+modalCloseBtn.addEventListener('click', closeModal);
+modalOverlay.addEventListener('click', (e) => {
+  if (e.target === modalOverlay) closeModal();
+});
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') closeModal();
+});
+
+// Audio controls
+function playAudio() {
+  if (!audio.src || currentIndex === -1) return;
+  audio.play().then(() => {
+    setStatus('playing');
+    audioPlayBtn.classList.add('active');
+  }).catch(() => {
+    setStatus('error');
+  });
+}
+
+function pauseAudio() {
+  if (audio.paused) return;
+  audio.pause();
+  setStatus('paused');
+  audioPlayBtn.classList.remove('active');
+}
+
+function stopAudio() {
+  audio.pause();
+  audio.currentTime = 0;
+  setStatus('stopped');
+  audioPlayBtn.classList.remove('active');
+  progressBarFill.style.width = '0%';
+}
+
+function setStatus(state) {
+  statusDot.className = 'status-dot';
+  switch (state) {
+    case 'playing':
+      statusDot.classList.add('playing');
+      statusText.textContent = 'Воспроизведение';
+      break;
+    case 'paused':
+      statusDot.classList.add('paused');
+      statusText.textContent = 'Пауза';
+      break;
+    case 'stopped':
+      statusText.textContent = 'Остановлено';
+      break;
+    default:
+      statusText.textContent = 'Ожидание';
+  }
+}
+
+audioPlayBtn.addEventListener('click', playAudio);
+audioPauseBtn.addEventListener('click', pauseAudio);
+audioStopBtn.addEventListener('click', stopAudio);
+
+speedSlider.addEventListener('input', () => {
+  const val = parseFloat(speedSlider.value);
+  speedValue.textContent = val.toFixed(1) + '×';
+  audio.playbackRate = val;
+});
+
+audio.addEventListener('timeupdate', () => {
+  if (audio.duration) {
+    const pct = (audio.currentTime / audio.duration) * 100;
+    progressBarFill.style.width = pct + '%';
+  }
+});
+
+audio.addEventListener('ended', () => {
+  setStatus('stopped');
+  audioPlayBtn.classList.remove('active');
+  progressBarFill.style.width = '100%';
+});
+
+audio.addEventListener('pause', () => {
+  if (!audio.ended) {
+    setStatus('paused');
+    audioPlayBtn.classList.remove('active');
+  }
+});
+
+audio.addEventListener('play', () => {
+  setStatus('playing');
+  audioPlayBtn.classList.add('active');
+});
+
+// ===== REVIEW (Camera + Mic + Record) =====
+const reviewBtn = document.getElementById('reviewBtn');
+const reviewPanel = document.getElementById('reviewPanel');
+const reviewPreview = document.getElementById('reviewPreview');
+const recStartBtn = document.getElementById('recStartBtn');
+const recStopBtn = document.getElementById('recStopBtn');
+const recSaveBtn = document.getElementById('recSaveBtn');
+const reviewStatus = document.getElementById('reviewStatus');
+
+let mediaStream = null;
+let mediaRecorder = null;
+let recordedChunks = [];
+
+reviewBtn.addEventListener('click', async () => {
+  reviewPanel.classList.toggle('active');
+  if (reviewPanel.classList.contains('active') && !mediaStream) {
+    try {
+      mediaStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+      reviewPreview.srcObject = mediaStream;
+      reviewStatus.textContent = 'Камера и микрофон активны. Нажмите «Начать запись».';
+    } catch (err) {
+      reviewStatus.textContent = 'Не удалось получить доступ к камере/микрофону: ' + err.message;
+    }
+  }
+});
+
+recStartBtn.addEventListener('click', () => {
+  if (!mediaStream) {
+    reviewStatus.textContent = 'Сначала включите камеру.';
+    return;
+  }
+  recordedChunks = [];
+  mediaRecorder = new MediaRecorder(mediaStream, { mimeType: 'video/webm' });
+  mediaRecorder.ondataavailable = (e) => {
+    if (e.data.size > 0) recordedChunks.push(e.data);
+  };
+  mediaRecorder.onstop = () => {
+    reviewStatus.textContent = 'Запись завершена. Нажмите «Сохранить» для скачивания.';
+    recSaveBtn.disabled = false;
+  };
+  mediaRecorder.start();
+  recStartBtn.disabled = true;
+  recStopBtn.disabled = false;
+  recSaveBtn.disabled = true;
+  reviewStatus.textContent = '⏺ Запись идёт...';
+});
+
+recStopBtn.addEventListener('click', () => {
+  if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+    mediaRecorder.stop();
+    recStartBtn.disabled = false;
+    recStopBtn.disabled = true;
+  }
+});
+
+recSaveBtn.addEventListener('click', () => {
+  if (recordedChunks.length === 0) return;
+  const blob = new Blob(recordedChunks, { type: 'video/webm' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  const p = paintings[currentIndex];
+  const fileName = p ? p.title.replace(/[«»"]/g, '') : 'отзыв';
+  a.download = `Отзыв_${fileName}.webm`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  reviewStatus.textContent = 'Файл сохранён!';
+});
+</script>
+</body>
+</html>
